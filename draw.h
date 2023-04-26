@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include <vector>
 
-#include "square.h"
+#include "Square.h"
 
 void drawPoint(double x, double y, double z, float size);
 void drawSquare(Square square);

@@ -1,6 +1,6 @@
 #include <Eigen/Dense>
 #include <stdio.h>
-#include "square.h"
+#include "Square.h"
 #include <iostream>
 #include <math.h>
 
