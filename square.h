@@ -8,14 +8,15 @@ using namespace std;
 
 struct Point
 {
-	Point(Eigen::Vector3d& pos, Eigen::Vector3d& re_pos, Eigen::Vector3d& vel, double& t, Eigen::Vector3i& gri)
-		: position(pos), reference_position(re_pos), velocity(vel), theta(t), grid_node(gri) {};
+	Point(Eigen::Vector3d& pos, Eigen::Vector3d& re_pos, Eigen::Vector3d& vel, double& t, Eigen::Vector3i& gri, double& p)
+		: position(pos), reference_position(re_pos), velocity(vel), theta(t), grid_node(gri), power(p) {};
 
 	Eigen::Vector3d position;
 	Eigen::Vector3d reference_position;
 	Eigen::Vector3d velocity;
 	double theta;
 	Eigen::Vector3i grid_node;
+	double power;
 };
 
 struct Square

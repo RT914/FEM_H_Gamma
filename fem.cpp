@@ -9,7 +9,7 @@
 #include "Draw.h"
 #include "Square.h"
 #include "FEM.h"
-// #include "NewtonRaphsonMethod.h"
+#include "NewtonRaphsonMethod.h"
 // #include "export.h"
 
 Square square = createSquare(NumberOfOneDemensionParticles);
@@ -21,7 +21,7 @@ int calculation_times = 0;
 double dt = 1.0e-3;
 Eigen::Vector3d gravity{ 0.0, 0.0, -9.81 };
 
-
+Eigen::VectorXd new_phi;
 
 void calVelocity()
 {
@@ -53,6 +53,25 @@ void calPosition()
 
 void fem(int SimulationTime)
 {
+	
+	if (SimulationTime == 1) {
+		calInterpolationSophia();
+		calInterpolationChloe();
+		calInterpolationAria();
+		// calInterpolationMia(); // 不要になった
+		// new_phi = Newton(square); // 通常
+		// new_phi = Newton_Convenient(square); // 都合よく補間量をアレンジした場合
+		// new_phi = Newton_H(square); // 目的関数Hだけ
+		new_phi = Newton_H_onetime(square); // 目的関数Hだけ（1回）
+	}
+	
+	// std::cout << new_phi.size() << std::endl;
+
+	for (int i = 0; i < NumberOfParticles; i++) {
+		square.points[i].position[0] = new_phi(3 * i);
+		square.points[i].position[1] = new_phi(3 * i + 1);
+		square.points[i].position[2] = new_phi(3 * i + 2);
+	}
 
 	glColor3f(0.5, 0.0, 0.0);
 	drawSquare(square);
