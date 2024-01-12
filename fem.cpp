@@ -59,10 +59,11 @@ void fem(int SimulationTime)
 		calInterpolationChloe();
 		calInterpolationAria();
 		// calInterpolationMia(); // 不要になった
-		// new_phi = Newton(square); // 通常
 		// new_phi = Newton_Convenient(square); // 都合よく補間量をアレンジした場合
+		// new_phi = Newton_H_onetime(square); // 目的関数Hだけ（1回）
+
+		new_phi = Newton(square); // 通常
 		// new_phi = Newton_H(square); // 目的関数Hだけ
-		new_phi = Newton_H_onetime(square); // 目的関数Hだけ（1回）
 	}
 	
 	// std::cout << new_phi.size() << std::endl;

@@ -69,8 +69,8 @@ Eigen::VectorXd VectorDeltaPhi(3 * NumberOfParticles);
 Eigen::VectorXd VectorDeltaTheta(NumberOfParticles);
 
 // For H
-// 行列Qの大きさは[NumberOfParticles][NumberOfParticles]　とする．
-Eigen::MatrixXd MatrixQ_H(3 * NumberOfParticles, NumberOfParticles);
+// 行列Pの大きさは[NumberOfParticles][NumberOfParticles]　とする．
+Eigen::MatrixXd MatrixP_H(3 * NumberOfParticles, NumberOfParticles);
 
 // ベクトルbの大きさは [NumberOfParticles]　とする．
 Eigen::VectorXd Vectorb_H(NumberOfParticles);
@@ -125,7 +125,9 @@ Eigen::VectorXd Newton(Square square) {
 		MatrixP = calMatrixP(square, barphi, bartheta); // 行列Pを計算
 		exportMatrixP(MatrixP);
 		MatrixQ = calMatrixQ(square, barphi, bartheta); // 行列Qを計算
-		exportMatrixQ(MatrixQ);
+		if (looptimes == 0) {
+			exportMatrixQ(MatrixQ);
+		}
 		MatrixR = calMatrixR(square, barphi, bartheta); // 行列Rを計算
 		if (looptimes == 0){ exportMatrixR(MatrixR); }
 		Vectorb = calVectorb(square, barphi, bartheta); // ベクトルbを計算
@@ -352,14 +354,14 @@ Eigen::VectorXd Newton_H_onetime(Square square) {
 
 	// std::cout << barphi << "\n";
 
-	MatrixQ_H = calMatrixP(square, barphi, bartheta); // 行列Pを計算
+	MatrixP_H = calMatrixP(square, barphi, bartheta); // 行列Pを計算
 	// exportMatrixP(MatrixP);
 	Vectorb_H = calVectorb(square, barphi, bartheta); // ベクトルbを計算（補間量を理想化）
 	// std::cout << Vectorb_H << "\n";
 	// exportVectorb_Convenient(Vectorb);
 
-	MatrixR_H = MatrixQ_H * MatrixQ_H.transpose();
-	Vectorc_H = Vectorb_H.transpose() * MatrixQ_H.transpose();
+	MatrixR_H = MatrixP_H * MatrixP_H.transpose();
+	Vectorc_H = Vectorb_H.transpose() * MatrixP_H.transpose();
 
 	Eigen::FullPivLU<Eigen::MatrixXd> LU(MatrixR_H);
 	Eigen::VectorXd VectorDeltaPhi = LU.solve(Vectorc_H);
@@ -382,12 +384,12 @@ Eigen::VectorXd Newton_H_onetime(Square square) {
 	//Armijo
 	Eigen::VectorXd f_prime = calVectorb_Convenient(square, barphi_prime, re_barphi, bartheta);;
 	Eigen::VectorXd f = Vectorb_H;
-	Eigen::VectorXd nabla_f1 = eps1 * lambda * MatrixQ_H.transpose() * VectorDeltaPhi;
+	Eigen::VectorXd nabla_f1 = eps1 * lambda * MatrixP_H.transpose() * VectorDeltaPhi;
 	Eigen::VectorXd right_f = f + nabla_f1;
 
 	//curvature
 	Eigen::VectorXd nabla_f_prime = calMatrixP(square, barphi_prime, bartheta).transpose() * VectorDeltaPhi;
-	Eigen::VectorXd nabla_f2 = eps2 * MatrixQ_H.transpose() * VectorDeltaPhi;
+	Eigen::VectorXd nabla_f2 = eps2 * MatrixP_H.transpose() * VectorDeltaPhi;
 
 	
 	while (f_prime.norm() > right_f.norm() || abs(nabla_f_prime.norm()) < abs(nabla_f2.norm())) {
@@ -397,12 +399,12 @@ Eigen::VectorXd Newton_H_onetime(Square square) {
 
 		//Armijo
 		f_prime = calVectorb(square, barphi_prime, bartheta);
-		nabla_f1 = eps1 * lambda * MatrixQ_H.transpose() * VectorDeltaPhi;
+		nabla_f1 = eps1 * lambda * MatrixP_H.transpose() * VectorDeltaPhi;
 		right_f = f + nabla_f1;
 
 		//curvature
 		nabla_f_prime = calMatrixP(square, barphi_prime, bartheta).transpose() * VectorDeltaPhi;
-		nabla_f2 = eps2 * MatrixQ_H.transpose() * VectorDeltaPhi;
+		nabla_f2 = eps2 * MatrixP_H.transpose() * VectorDeltaPhi;
 
 		// line_search_times++;
 	}
@@ -704,15 +706,21 @@ Eigen::VectorXd Newton_H(Square square) {
 
 	// std::cout << barphi << "\n";
 
+	int looptimes = 0;
+
 	while (NormVectorDeltaPhi > 1.0e-6) {
-		MatrixQ_H = calMatrixP(square, barphi, bartheta); // 行列Pを計算
+		MatrixP_H = calMatrixP(square, barphi, bartheta); // 行列Pを計算
 		// exportMatrixP(MatrixP);
 		Vectorb_H = calVectorb(square, barphi, bartheta); // ベクトルbを計算（補間量を理想化）
 		// std::cout << Vectorb_H << "\n";
 		// exportVectorb_Convenient(Vectorb);
 
-		MatrixR_H = MatrixQ_H * MatrixQ_H.transpose();
-		Vectorc_H = Vectorb_H.transpose() * MatrixQ_H.transpose();
+		if (looptimes == 0) {
+			exportMatrixP(MatrixP_H);
+		}
+
+		MatrixR_H = MatrixP_H * MatrixP_H.transpose();
+		Vectorc_H = Vectorb_H.transpose() * MatrixP_H.transpose();
 
 		Eigen::FullPivLU<Eigen::MatrixXd> LU(MatrixR_H);
 		Eigen::VectorXd VectorDeltaPhi = LU.solve(Vectorc_H);
@@ -735,12 +743,12 @@ Eigen::VectorXd Newton_H(Square square) {
 		//Armijo
 		Eigen::VectorXd f_prime = calVectorb_Convenient(square, barphi_prime, re_barphi, bartheta);;
 		Eigen::VectorXd f = Vectorb_H;
-		Eigen::VectorXd nabla_f1 = eps1 * lambda * MatrixQ_H.transpose() * VectorDeltaPhi;
+		Eigen::VectorXd nabla_f1 = eps1 * lambda * MatrixP_H.transpose() * VectorDeltaPhi;
 		Eigen::VectorXd right_f = f + nabla_f1;
 
 		//curvature
 		Eigen::VectorXd nabla_f_prime = calMatrixP(square, barphi_prime, bartheta).transpose() * VectorDeltaPhi;
-		Eigen::VectorXd nabla_f2 = eps2 * MatrixQ_H.transpose() * VectorDeltaPhi;
+		Eigen::VectorXd nabla_f2 = eps2 * MatrixP_H.transpose() * VectorDeltaPhi;
 
 		while (f_prime.norm() > right_f.norm() || abs(nabla_f_prime.norm()) < abs(nabla_f2.norm()) ) {
 			// λ，barphi_primeの更新
@@ -749,22 +757,25 @@ Eigen::VectorXd Newton_H(Square square) {
 
 			//Armijo
 			f_prime = calVectorb(square, barphi_prime, bartheta);
-			nabla_f1 = eps1 * lambda * MatrixQ_H.transpose() * VectorDeltaPhi;
+			nabla_f1 = eps1 * lambda * MatrixP_H.transpose() * VectorDeltaPhi;
 			right_f = f + nabla_f1;
 
 			//curvature
 			nabla_f_prime = calMatrixP(square, barphi_prime, bartheta).transpose() * VectorDeltaPhi;
-			nabla_f2 = eps2 * MatrixQ_H.transpose() * VectorDeltaPhi;
+			nabla_f2 = eps2 * MatrixP_H.transpose() * VectorDeltaPhi;
 
 			// line_search_times++;
+			std::cout << "lambda : " << lambda << "\n";
 		}
 
-
-		std::cout << "lambda : " << lambda << "\n";
+		std::cout << "Result Lambda : " << lambda << "\n";
+		std::cout << "\n";
 		
 
 		// 座標の更新
 		barphi += lambda * VectorDeltaPhi;
+
+		looptimes++;
 	}
 
 	// std::cout << barphi.size() << "\n";
@@ -1178,6 +1189,7 @@ Eigen::MatrixXd calMatrixP(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 
 					// 判定〇なら計算
 					if (FlagCalGrid) {
+						
 						double w2w3w1 = SophiaX[1][2][0][i_minus_xi[0] + 1][j_minus_xi[0] + 1][k_minus_xi[0] + 1]
 							* SophiaY[1][2][0][i_minus_xi[1] + 1][j_minus_xi[1] + 1][k_minus_xi[1] + 1]
 							* SophiaZ[1][2][0][i_minus_xi[2] + 1][j_minus_xi[2] + 1][k_minus_xi[2] + 1];
@@ -1189,10 +1201,6 @@ Eigen::MatrixXd calMatrixP(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 						double w1w2w3 = SophiaX[0][1][2][i_minus_xi[0] + 1][j_minus_xi[0] + 1][k_minus_xi[0] + 1]
 							* SophiaY[0][1][2][i_minus_xi[1] + 1][j_minus_xi[1] + 1][k_minus_xi[1] + 1]
 							* SophiaZ[0][1][2][i_minus_xi[2] + 1][j_minus_xi[2] + 1][k_minus_xi[2] + 1];
-
-						//m_x += Phi1 * w2w3w1;
-						//m_y += -Phi2 * w1w3w2;
-						//m_z += Phi3 * w1w2w3;
 
 						m_x[0] += Phi_2_3 * w2w3w1;
 						m_x[1] += Phi_3_2 * w2w3w1;
@@ -1214,8 +1222,42 @@ Eigen::MatrixXd calMatrixP(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 						m_z[3] += Phi_1_2 * w1w3w2;
 						m_z[4] += Phi_1_2 * w1w2w3;
 						m_z[5] += Phi_2_1 * w1w2w3;
+						
 
+						/*
+						vector<Eigen::Vector3i> v = { i_minus_xi, j_minus_xi, k_minus_xi };
+
+						double w2w3w1 = Riemann_Sum_for_Sophia(v, { 1, 2, 0 }, square.dx);
+
+						double w1w3w2 = Riemann_Sum_for_Sophia(v, { 0, 2, 1 }, square.dx);
+
+						double w1w2w3 = Riemann_Sum_for_Sophia(v, { 0, 1, 2 }, square.dx);
+
+						m_x[0] += Phi_2_3 * w2w3w1;
+						m_x[1] += Phi_3_2 * w2w3w1;
+						m_x[2] += Phi_3_2 * w1w3w2;
+						m_x[3] += Phi_2_3 * w1w3w2;
+						m_x[4] += Phi_2_3 * w1w2w3;
+						m_x[5] += Phi_3_2 * w1w2w3;
+
+						m_y[0] += Phi_3_1 * w2w3w1;
+						m_y[1] += Phi_1_3 * w2w3w1;
+						m_y[2] += Phi_1_3 * w1w3w2;
+						m_y[3] += Phi_3_1 * w1w3w2;
+						m_y[4] += Phi_3_1 * w1w2w3;
+						m_y[5] += Phi_1_3 * w1w2w3;
+
+						m_z[0] += Phi_1_2 * w2w3w1;
+						m_z[1] += Phi_2_1 * w2w3w1;
+						m_z[2] += Phi_2_1 * w1w3w2;
+						m_z[3] += Phi_1_2 * w1w3w2;
+						m_z[4] += Phi_1_2 * w1w2w3;
+						m_z[5] += Phi_2_1 * w1w2w3;
+						*/
 					}
+
+
+					
 				}
 			}
 
@@ -1261,14 +1303,21 @@ Eigen::MatrixXd calMatrixQ(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 			Eigen::Vector3i i_minus_xi = grid_i - grid_xi;
 
 			// i - xi, j - xi, k - xi が -1～1の範囲であるかの判定
-					//i - xi
+			//i - xi
 			if ((abs(i_minus_xi[0]) <= 1) && (abs(i_minus_xi[1]) <= 1) && (abs(i_minus_xi[2]) <= 1)) {
 				FlagCalGrid = true;
 				//std::cout << "true\n";
 			}
 
 			if (FlagCalGrid) {
-				OutputQ(i, xi) = Chloe[i_minus_xi[0] + 1][i_minus_xi[1] + 1][i_minus_xi[2] + 1];
+				// OutputQ(i, xi) = Chloe[i_minus_xi[0] + 1][i_minus_xi[1] + 1][i_minus_xi[2] + 1];
+
+				
+				OutputQ(i, xi)
+					= Riemann_Sum_for_Chloe(i_minus_xi[0], square.dx)
+					* Riemann_Sum_for_Chloe(i_minus_xi[1], square.dx)
+					* Riemann_Sum_for_Chloe(i_minus_xi[2], square.dx) / 64;
+				
 			}
 
 		}
@@ -1330,15 +1379,17 @@ Eigen::MatrixXd calMatrixR(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 				// 判定〇なら計算
 				if (FlagCalGrid2) {
 					
+					/*
 					OutputR2(i, k) += (kappa / 2) * (1 / pow(theta[j], 2) ) 
 						* Riemann_Sum_for_Luna(j_minus_k[0], i_minus_k[0], square.dx) 
 						* Riemann_Sum_for_Luna(j_minus_k[1], i_minus_k[1], square.dx) 
 						* Riemann_Sum_for_Luna(j_minus_k[2], i_minus_k[2], square.dx);
+						* */
 					
-					/*
+					
 					OutputR2(i, k) += pow(square.dx, 3) * (1 / pow(theta[i], 2) * (kappa / 2))
 						* Aria[i_minus_k[0] + 1][i_minus_k[1] + 1][i_minus_k[2] + 1][j_minus_k[0] + 1][j_minus_k[1] + 1][j_minus_k[2] + 1];
-					*/
+					
 				}
 				
 			}
@@ -1702,14 +1753,14 @@ Eigen::VectorXd calVectorc(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 			// 判定〇なら計算
 			if (FlagCalGrid) {
 
-				
+				/*
 				Outputc2(k) += kappa / 2 * (1 / theta[i])
 					* Riemann_Sum_for_Mary(i_minus_k[0], square.dx)
 					* Riemann_Sum_for_Mary(i_minus_k[1], square.dx) 
 					* Riemann_Sum_for_Mary(i_minus_k[2], square.dx);
-				
+				*/
 
-				// Outputc2(k) += pow(square.dx, 3) * kappa / 2 * (1 / theta[i]) * Chloe[i_minus_k[0] + 1][i_minus_k[1] + 1][i_minus_k[2] + 1];
+				Outputc2(k) += pow(square.dx, 3) * kappa / 2 * (1 / theta[i]) * Chloe[i_minus_k[0] + 1][i_minus_k[1] + 1][i_minus_k[2] + 1];
 
 			}
 
@@ -1760,6 +1811,19 @@ double HatFunction(double x)
 	double x_num = (abs(x) < 1.0) ? (1.0 - abs(x)) : 0.0;
 
 	return x_num;
+}
+
+double DifferentialHatFunction(double x)
+{
+	if (x >= -1.0 && x < 0.0) {
+		return 1.0;
+	}
+	else if (x <= 1.0 && x > 0.0) {
+		return -1.0;
+	}
+	else {
+		return 0.0;
+	}
 }
 
 double Riemann_Sum_for_Mary(int i, double h) {
@@ -1840,4 +1904,104 @@ double Riemann_Sum_for_Luna(int i, int j, double h) {
 	cal_point.clear();
 
 	return totalSum;
+}
+
+double Riemann_Sum_for_Chloe(int i, double h) {
+
+	int d = 10; // ひと範囲の分割数
+	double w = 1.0 / d; // 分割幅
+	// 各軸の総分割数
+
+	vector<double> cal_point;
+
+	for (int a = 0; a < d; a++) {
+		cal_point.emplace_back(1.0 / (2.0 * d) + a * w);
+	}
+
+	double totalSum = 0.0;
+
+	for (int offset = -2; offset <= 1; offset++) {
+		double sum = 0.0;
+		for (int a = 0; a < d; a++) {
+			double cal = static_cast<double>(offset) + cal_point[a];
+			double denominator = HatFunction(cal - i);
+
+			// ゼロ除算を避けるためのチェック
+			if (std::abs(denominator) < 1e-10) { // 1e-10 は小さな閾値です
+				continue; // 単に加算をスキップします
+			}
+			else {
+				sum += w * h * denominator * HatFunction(cal);
+			}
+		}
+
+		// 各offsetの合計を全体の合計に追加
+		totalSum += sum;
+
+	}
+
+	cal_point.clear();
+
+	return totalSum;
+}
+
+double Riemann_Sum_for_Sophia(vector<Eigen::Vector3i> v, vector<int> axis, double h) {
+	// axis = {1,2,0}などが入る
+
+	int d = 10; // ひと範囲の分割数
+	double w = 1.0 / d; // 分割幅
+	// 各軸の総分割数
+
+	vector<double> cal_point;
+
+	for (int a = 0; a < d; a++) {
+		cal_point.emplace_back(1.0 / (2.0 * d) + a * w);
+	}
+
+	double AllDimSum = 1.0;
+
+	// 各次元ずつ計算
+	for (int dim = 0; dim < 3; dim++) {
+
+		// 各区間ごとに計算
+		double totalSum = 0.0;
+		for (int offset = -2; offset <= 1; offset++) {
+
+			double sum = 0.0;
+			for (int a = 0; a < d; a++) {
+				double denominator = 1.0;
+				double cal = static_cast<double>(offset) + cal_point[a];
+				if (dim == axis[0]) {
+					denominator *= (1 / h) * DifferentialHatFunction(cal - v[0][dim]) * HatFunction(cal - v[1][dim]) * HatFunction(cal - v[2][dim]);
+				}
+				else if (dim == axis[1]) {
+					denominator *= (1 / h) * HatFunction(cal - v[0][dim]) * DifferentialHatFunction(cal - v[1][dim]) * HatFunction(cal - v[2][dim]);
+				}
+				else if (dim == axis[2]) {
+					denominator *= (1 / h) * HatFunction(cal - v[0][dim]) * HatFunction(cal - v[1][dim]) * DifferentialHatFunction(cal - v[2][dim]);
+				}
+				else {
+					denominator = 0.0;
+				}
+
+				// ゼロ除算を避けるためのチェック
+				if (std::abs(denominator) < 1e-10) { // 1e-10 は小さな閾値です
+					continue; // 単に加算をスキップします
+				}
+				else {
+					sum += w * h * denominator * HatFunction(cal);
+				}
+			}
+
+			// 各offsetの合計を全体の合計に追加
+			totalSum += sum;
+
+		}
+		AllDimSum *= totalSum;
+	}
+
+	
+	cal_point.clear();
+
+	return AllDimSum;
 }

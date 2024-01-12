@@ -28,10 +28,13 @@ int GridToFlat(Eigen::Vector3i grid_index); // ƒOƒŠƒbƒhƒCƒ“ƒfƒbƒNƒX‚©‚çƒtƒ‰ƒbƒgƒ
 Eigen::Vector3i FlatToGrid(int flat_index); // ƒtƒ‰ƒbƒgƒCƒ“ƒfƒbƒNƒX‚©‚çƒOƒŠƒbƒhƒCƒ“ƒfƒbƒNƒX‚Ö‚Ì•ÏŠ·
 
 double HatFunction(double x); // ”’lŒvZ‚ÌÛ‚Ég—p
+double DifferentialHatFunction(double x); // ”’lŒvZ‚ÌÛ‚Ég—p
 
 // ‹æ•ª‹‰”–@‚Ì”’lŒvZ
+double Riemann_Sum_for_Chloe(int i, double h);
 double Riemann_Sum_for_Mary(int i, double h);
 double Riemann_Sum_for_Luna(int i, int j, double h);
+double Riemann_Sum_for_Sophia(vector<Eigen::Vector3i> v, vector<int> axis, double h);
 
 #endif
 
