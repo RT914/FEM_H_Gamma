@@ -64,18 +64,22 @@ void fem(int SimulationTime)
 
 		new_phi = Newton(square); // ’Êí
 		// new_phi = Newton_H(square); // –Ú“IŠÖ”H‚¾‚¯
+
+		// std::cout << Riemann_Sum_Example(square.dx) << std::endl;
 	}
 	
 	// std::cout << new_phi.size() << std::endl;
 
+	
 	for (int i = 0; i < NumberOfParticles; i++) {
 		square.points[i].position[0] = new_phi(3 * i);
 		square.points[i].position[1] = new_phi(3 * i + 1);
 		square.points[i].position[2] = new_phi(3 * i + 2);
 	}
+	
 
 	glColor3f(0.5, 0.0, 0.0);
 	drawSquare(square);
 	Ground();
-
+	
 };

@@ -33,8 +33,9 @@ double DifferentialHatFunction(double x); // 数値計算の際に使用
 // 区分級数法の数値計算
 double Riemann_Sum_for_Chloe(int i, double h);
 double Riemann_Sum_for_Mary(int i, double h);
-double Riemann_Sum_for_Luna(int i, int j, double h);
+double Riemann_Sum_for_Luna(int i_minus_k, int k, Eigen::VectorXd theta, double h);
 double Riemann_Sum_for_Sophia(vector<Eigen::Vector3i> v, vector<int> axis, double h);
+double Riemann_Sum_Example(double h);
 
 #endif
 

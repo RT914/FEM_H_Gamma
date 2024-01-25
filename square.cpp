@@ -12,7 +12,7 @@ Square createSquare(int N)
 	Eigen::Vector3d pos;
 	pos << 0.0, 0.0, 0.0;
 	int one_d_point_num = N;
-	double range = (N - 1) / 0.5;
+	double range = (N - 1) / 1.0;
 	double dx = 2 * range / (N - 1);
 	Square square(pos, dx, one_d_point_num);
 	Eigen::Vector3d velocity;

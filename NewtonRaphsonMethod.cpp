@@ -198,7 +198,7 @@ Eigen::VectorXd Newton(Square square) {
 		//Line Search with Wolfe
 		double sigma = 0.5;
 		double eps1 = 0.01;
-		double eps2 = 0.1;
+		double eps2 = 0.9;
 		double lambda = 1.0;
 		int line_search_times = 1;
 
@@ -729,7 +729,7 @@ Eigen::VectorXd Newton_H(Square square) {
 		NormVectorDeltaPhi = VectorDeltaPhi.norm();
 		norm.emplace_back(NormVectorDeltaPhi);
 		std::cout << "NormVectorDeltaPhi = " << NormVectorDeltaPhi << "\n";
-		// exportVectorDeltaPhi(VectorDeltaPhi);
+		exportVectorDeltaPhi(VectorDeltaPhi);
 
 		//Line Search with Wolfe
 		double sigma = 0.5;
@@ -1190,6 +1190,7 @@ Eigen::MatrixXd calMatrixP(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 					// 判定〇なら計算
 					if (FlagCalGrid) {
 						
+						/*
 						double w2w3w1 = SophiaX[1][2][0][i_minus_xi[0] + 1][j_minus_xi[0] + 1][k_minus_xi[0] + 1]
 							* SophiaY[1][2][0][i_minus_xi[1] + 1][j_minus_xi[1] + 1][k_minus_xi[1] + 1]
 							* SophiaZ[1][2][0][i_minus_xi[2] + 1][j_minus_xi[2] + 1][k_minus_xi[2] + 1];
@@ -1222,9 +1223,9 @@ Eigen::MatrixXd calMatrixP(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 						m_z[3] += Phi_1_2 * w1w3w2;
 						m_z[4] += Phi_1_2 * w1w2w3;
 						m_z[5] += Phi_2_1 * w1w2w3;
-						
+						*/
 
-						/*
+						
 						vector<Eigen::Vector3i> v = { i_minus_xi, j_minus_xi, k_minus_xi };
 
 						double w2w3w1 = Riemann_Sum_for_Sophia(v, { 1, 2, 0 }, square.dx);
@@ -1253,7 +1254,7 @@ Eigen::MatrixXd calMatrixP(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 						m_z[3] += Phi_1_2 * w1w3w2;
 						m_z[4] += Phi_1_2 * w1w2w3;
 						m_z[5] += Phi_2_1 * w1w2w3;
-						*/
+						
 					}
 
 
@@ -1310,13 +1311,15 @@ Eigen::MatrixXd calMatrixQ(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 			}
 
 			if (FlagCalGrid) {
-				// OutputQ(i, xi) = Chloe[i_minus_xi[0] + 1][i_minus_xi[1] + 1][i_minus_xi[2] + 1];
+				// 解析的
+				// OutputQ(i, xi) = - pow(square.dx, 3) * Chloe[i_minus_xi[0] + 1][i_minus_xi[1] + 1][i_minus_xi[2] + 1];
 
-				
+				// 数値的
 				OutputQ(i, xi)
-					= Riemann_Sum_for_Chloe(i_minus_xi[0], square.dx)
+					= - Riemann_Sum_for_Chloe(i_minus_xi[0], square.dx)
 					* Riemann_Sum_for_Chloe(i_minus_xi[1], square.dx)
-					* Riemann_Sum_for_Chloe(i_minus_xi[2], square.dx) / 64;
+					* Riemann_Sum_for_Chloe(i_minus_xi[2], square.dx);
+				
 				
 			}
 
@@ -1356,7 +1359,7 @@ Eigen::MatrixXd calMatrixR(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 
 			// 判定〇なら計算
 			if (FlagCalGrid1) {
-				OutputR1(i, k) = (kappa / 2) * Chloe[i_minus_k[0] + 1][i_minus_k[1] + 1][i_minus_k[2] + 1];
+				OutputR1(i, k) = pow(square.dx, 3) * (kappa / 2) * Chloe[i_minus_k[0] + 1][i_minus_k[1] + 1][i_minus_k[2] + 1];
 			}
 
 			for (int j = 0; j < NumberOfParticles; j++) {
@@ -1380,19 +1383,22 @@ Eigen::MatrixXd calMatrixR(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 				if (FlagCalGrid2) {
 					
 					/*
-					OutputR2(i, k) += (kappa / 2) * (1 / pow(theta[j], 2) ) 
-						* Riemann_Sum_for_Luna(j_minus_k[0], i_minus_k[0], square.dx) 
-						* Riemann_Sum_for_Luna(j_minus_k[1], i_minus_k[1], square.dx) 
-						* Riemann_Sum_for_Luna(j_minus_k[2], i_minus_k[2], square.dx);
-						* */
-					
-					
+					// 解析的
 					OutputR2(i, k) += pow(square.dx, 3) * (1 / pow(theta[i], 2) * (kappa / 2))
 						* Aria[i_minus_k[0] + 1][i_minus_k[1] + 1][i_minus_k[2] + 1][j_minus_k[0] + 1][j_minus_k[1] + 1][j_minus_k[2] + 1];
-					
+					*/
 				}
 				
 			}
+
+			if ((abs(i_minus_k[0]) <= 1) && (abs(i_minus_k[1]) <= 1) && (abs(i_minus_k[2]) <= 1)) {
+				// 数値的
+				OutputR2(i, k) += (kappa / 2)
+					* Riemann_Sum_for_Luna(i_minus_k[0], k, theta, square.dx)
+					* Riemann_Sum_for_Luna(i_minus_k[1], k, theta, square.dx)
+					* Riemann_Sum_for_Luna(i_minus_k[2], k, theta, square.dx);
+			}
+			
 
 			/*
 			for (int a = 0; a < NumberOfParticles; a++) {
@@ -1404,7 +1410,7 @@ Eigen::MatrixXd calMatrixR(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 			*/
 			
 
-			OutputR(i, k) = OutputR1(i, k) * pow(square.dx, 3) + OutputR2(i, k);
+			OutputR(i, k) = OutputR1(i, k) + OutputR2(i, k);
 
 		}
 	}
@@ -1506,12 +1512,20 @@ Eigen::VectorXd calVectorb(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 							+ bar_phi_i_y * (bar_phi_j_z * bar_phi_k_x - bar_phi_j_x * bar_phi_k_z)
 							+ bar_phi_i_z * (bar_phi_j_x * bar_phi_k_y - bar_phi_j_y * bar_phi_k_x);
 
-
+						/*
+						// 解析的
 						double sophia = SophiaX[0][1][2][i_minus_xi[0] + 1][j_minus_xi[0] + 1][k_minus_xi[0] + 1]
 							* SophiaY[0][1][2][i_minus_xi[1] + 1][j_minus_xi[1] + 1][k_minus_xi[1] + 1]
 							* SophiaZ[0][1][2][i_minus_xi[2] + 1][j_minus_xi[2] + 1][k_minus_xi[2] + 1];
 
 						Vectorb2(xi) += Phi1 * sophia;
+						*/
+
+						// 数値的
+						vector<Eigen::Vector3i> v = { i_minus_xi, j_minus_xi, k_minus_xi };
+						double w1w2w3 = Riemann_Sum_for_Sophia(v, { 0, 1, 2 }, square.dx);
+
+						Vectorb2(xi) += Phi1 * w1w2w3;
 
 						//std::cout << "No.  " << xi << "  b2 : " << "Phi = " << Phi << ", w1w2w3 = " << w1w2w3 << ", Phi1 * w1w2w3 = " << Phi1 * w1w2w3 << "\n";
 						
@@ -1730,7 +1744,7 @@ Eigen::VectorXd calVectorc(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 
 			// 判定〇なら計算
 			if (FlagCalGrid) {
-				Outputc1(k) += ( square.points[i].power - kappa / 2 * theta[i] ) * Chloe[i_minus_k[0] + 1][i_minus_k[1] + 1][i_minus_k[2] + 1];
+				Outputc1(k) += pow(square.dx, 3) * ( square.points[i].power - kappa / 2 * theta[i] ) * Chloe[i_minus_k[0] + 1][i_minus_k[1] + 1][i_minus_k[2] + 1];
 			}
 
 		}
@@ -1766,7 +1780,7 @@ Eigen::VectorXd calVectorc(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 
 		}
 
-		Outputc(k) = pow(square.dx, 3) * Outputc1(k) + Outputc2(k);
+		Outputc(k) = Outputc1(k) + Outputc2(k);
 		// std::cout << "No.  " << k << "  V1 : " << Outputc1(k) << "\n";
 		// std::cout << "No.  " << k << "  V2 : " << Outputc2(k) << "\n";
 	}
@@ -1867,7 +1881,7 @@ double Riemann_Sum_for_Mary(int i, double h) {
 	return totalSum;
 }
 
-double Riemann_Sum_for_Luna(int i, int j, double h) {
+double Riemann_Sum_for_Luna(int i_minus_k, int k, Eigen::VectorXd theta, double h) {
 
 	int d = 10; // ひと範囲の分割数
 	double w = 1.0 / d; // 分割幅
@@ -1885,20 +1899,24 @@ double Riemann_Sum_for_Luna(int i, int j, double h) {
 		double sum = 0.0;
 		for (int a = 0; a < d; a++) {
 			double cal = static_cast<double>(offset) + cal_point[a];
-			double denominator = HatFunction(cal - i);
+			double sum_j = 0.0;
+			for (int j = 0; j < NumberOfParticles; j++) {
+				int j_minus_k = j - k;
+
+				if(abs(j_minus_k) <= 1) {
+					sum_j += theta[j] * HatFunction(cal - j_minus_k); // thetaの配列の積を考慮
+				}
+				
+			}
 
 			// ゼロ除算を避けるためのチェック
-			if (std::abs(denominator) < 1e-10) { // 1e-10 は小さな閾値です
+			if (abs(sum_j) < 1e-10) { // 1e-10 は小さな閾値です
 				continue; // 単に加算をスキップします
 			}
 			else {
-				sum += (1.0 / d) * h * (1 / pow(denominator, 2)) * HatFunction(cal - j) * HatFunction(cal);
+				sum += w * h * (1 / pow(sum_j, 2)) * HatFunction(cal - i_minus_k) * HatFunction(cal);
 			}
 		}
-
-		// 各offsetの合計を全体の合計に追加
-		totalSum += sum;
-
 	}
 
 	cal_point.clear();
@@ -1932,6 +1950,45 @@ double Riemann_Sum_for_Chloe(int i, double h) {
 			}
 			else {
 				sum += w * h * denominator * HatFunction(cal);
+			}
+		}
+
+		// 各offsetの合計を全体の合計に追加
+		totalSum += sum;
+
+	}
+
+	cal_point.clear();
+
+	return totalSum;
+}
+
+double Riemann_Sum_Example(double h) {
+
+	int d = 10; // ひと範囲の分割数
+	double w = 1.0 / d; // 分割幅
+	// 各軸の総分割数
+
+	vector<double> cal_point;
+
+	for (int a = 0; a < d; a++) {
+		cal_point.emplace_back(1.0 / (2.0 * d) + a * w);
+	}
+
+	double totalSum = 0.0;
+
+	for (int offset = -2; offset <= 1; offset++) {
+		double sum = 0.0;
+		for (int a = 0; a < d; a++) {
+			double cal = static_cast<double>(offset) + cal_point[a];
+			double denominator = HatFunction(cal);
+			// cout << denominator << endl;
+			// ゼロ除算を避けるためのチェック
+			if (std::abs(denominator) < 1e-10) { // 1e-10 は小さな閾値です
+				continue; // 単に加算をスキップします
+			}
+			else {
+				sum += w * h * denominator;
 			}
 		}
 
