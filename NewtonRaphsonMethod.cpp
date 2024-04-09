@@ -81,6 +81,8 @@ Eigen::MatrixXd MatrixR_H(3 * NumberOfParticles, 3 * NumberOfParticles);
 // ベクトルの大きさは [3×NumberOfParticles]　とする．
 Eigen::VectorXd Vectorc_H(3 * NumberOfParticles);
 
+int looptimes = 0;
+
 Eigen::VectorXd Newton(Square square) {
 	double NormVectorDeltaPhi = 1.0;
 	double NormVectorDeltaTheta = 1.0;
@@ -119,7 +121,7 @@ Eigen::VectorXd Newton(Square square) {
 
 	// std::cout << barphi << "\n";
 
-	int looptimes = 0;
+	// int looptimes = 0;
 
 	while (NormVectorDelta > 1.0e-6) {
 		MatrixP = calMatrixP(square, barphi, bartheta); // 行列Pを計算
@@ -133,7 +135,7 @@ Eigen::VectorXd Newton(Square square) {
 		Vectorb = calVectorb(square, barphi, bartheta); // ベクトルbを計算
 		exportVectorb(Vectorb);
 		Vectorc = calVectorc(square, barphi, bartheta); // ベクトルcを計算
-		exportVectorc(Vectorc);
+		if (looptimes == 0) { exportVectorc(Vectorc); }
 
 		
 		for (int i = 0; i < NumberOfParticles;i++) {
@@ -195,12 +197,14 @@ Eigen::VectorXd Newton(Square square) {
 
 		std::cout << " NormVectorDelta : " << NormVectorDelta << std::endl;
 
+		
 		//Line Search with Wolfe
 		double sigma = 0.5;
 		double eps1 = 0.01;
 		double eps2 = 0.9;
 		double lambda = 1.0;
 		int line_search_times = 1;
+		
 
 		barphi_prime = VectorDeltaPhi * lambda + barphi;
 		bartheta_prime = VectorDeltaTheta * lambda + bartheta;
@@ -302,6 +306,7 @@ Eigen::VectorXd Newton(Square square) {
 
 		std::cout << "Result Lambda : " << lambda << "\n";
 		std::cout << "\n";
+		
 
 		// 座標の更新
 		barphi += lambda * VectorDeltaPhi;
@@ -1378,40 +1383,27 @@ Eigen::MatrixXd calMatrixR(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 					}
 				}
 				
-
+				/*
 				// 判定〇なら計算
 				if (FlagCalGrid2) {
-					
-					/*
 					// 解析的
 					OutputR2(i, k) += pow(square.dx, 3) * (1 / pow(theta[i], 2) * (kappa / 2))
 						* Aria[i_minus_k[0] + 1][i_minus_k[1] + 1][i_minus_k[2] + 1][j_minus_k[0] + 1][j_minus_k[1] + 1][j_minus_k[2] + 1];
-					*/
 				}
+				*/
 				
 			}
 
+			
 			if ((abs(i_minus_k[0]) <= 1) && (abs(i_minus_k[1]) <= 1) && (abs(i_minus_k[2]) <= 1)) {
 				// 数値的
 				OutputR2(i, k) += (kappa / 2)
-					* Riemann_Sum_for_Luna(i_minus_k[0], k, theta, square.dx)
-					* Riemann_Sum_for_Luna(i_minus_k[1], k, theta, square.dx)
-					* Riemann_Sum_for_Luna(i_minus_k[2], k, theta, square.dx);
+					* Riemann_Sum_for_Luna(i_minus_k, grid_k, theta, square.dx);
+				
 			}
-			
-
-			/*
-			for (int a = 0; a < NumberOfParticles; a++) {
-				for (int b = 0; b < NumberOfParticles; b++) {
-					std::cout << OutputR2(a, b);
-				}
-				std::cout << std::endl;
-			}
-			*/
 			
 
 			OutputR(i, k) = OutputR1(i, k) + OutputR2(i, k);
-
 		}
 	}
 
@@ -1731,6 +1723,7 @@ Eigen::VectorXd calVectorc(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 		Outputc1(k) = 0.0;
 
 		for (int i = 0; i < NumberOfParticles; i++) {
+
 			FlagCalGrid = false;
 			Eigen::Vector3i grid_i = FlatToGrid(i);
 			Eigen::Vector3i i_minus_k = grid_i - grid_k;
@@ -1746,7 +1739,7 @@ Eigen::VectorXd calVectorc(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 			if (FlagCalGrid) {
 				Outputc1(k) += pow(square.dx, 3) * ( square.points[i].power - kappa / 2 * theta[i] ) * Chloe[i_minus_k[0] + 1][i_minus_k[1] + 1][i_minus_k[2] + 1];
 			}
-
+			// std::cout<< Chloe[1][1][1] << std::endl;
 		}
 
 		// calculate c2 vector
@@ -1766,21 +1759,29 @@ Eigen::VectorXd calVectorc(Square square, Eigen::VectorXd phi, Eigen::VectorXd t
 
 			// 判定〇なら計算
 			if (FlagCalGrid) {
-
-				/*
-				Outputc2(k) += kappa / 2 * (1 / theta[i])
-					* Riemann_Sum_for_Mary(i_minus_k[0], square.dx)
-					* Riemann_Sum_for_Mary(i_minus_k[1], square.dx) 
-					* Riemann_Sum_for_Mary(i_minus_k[2], square.dx);
-				*/
-
-				Outputc2(k) += pow(square.dx, 3) * kappa / 2 * (1 / theta[i]) * Chloe[i_minus_k[0] + 1][i_minus_k[1] + 1][i_minus_k[2] + 1];
-
+				// Outputc2(k) += pow(square.dx, 3) * kappa / 2 * (1 / theta[i]) * Chloe[i_minus_k[0] + 1][i_minus_k[1] + 1][i_minus_k[2] + 1];
 			}
 
 		}
+		
+		// 数値的
+		Outputc2(k) += kappa / 2 * Riemann_Sum_for_Mary(grid_k, theta, square.dx);
+
+		if (k == 13 && looptimes == 0) {
+			// std::cout << Outputc2(k) << std::endl;
+		}
+
+		// 中心の値の違い
+		Eigen::Vector3i test = { 1, 1, 1 };
+		
+		if (looptimes == 0) {
+			// std::cout << Riemann_Sum_for_Mary(test, theta, square.dx) << std::endl;
+		}
+		
+		
 
 		Outputc(k) = Outputc1(k) + Outputc2(k);
+		// Outputc(k) = Outputc2(k);
 		// std::cout << "No.  " << k << "  V1 : " << Outputc1(k) << "\n";
 		// std::cout << "No.  " << k << "  V2 : " << Outputc2(k) << "\n";
 	}
@@ -1840,9 +1841,9 @@ double DifferentialHatFunction(double x)
 	}
 }
 
-double Riemann_Sum_for_Mary(int i, double h) {
+double Riemann_Sum_for_Mary(Eigen::Vector3i grid_k, Eigen::VectorXd theta, double h) {
 
-	int d = 10; // ひと範囲の分割数
+	int d = 2; // ひと範囲の分割数
 	double w = 1.0 / d; // 分割幅
 	// 各軸の総分割数
 
@@ -1854,21 +1855,50 @@ double Riemann_Sum_for_Mary(int i, double h) {
 
 	double totalSum = 0.0;
 
-	for (int offset = -2; offset <= 1; offset++) {
+	for (int offset = -1; offset <= 0; offset++) {
 		double sum = 0.0;
+		double cal_pointX;
+		double cal_pointY;
+		double cal_pointZ;
 		for (int a = 0; a < d; a++) {
-			double cal = static_cast<double>(offset) + cal_point[a];
-			double denominator = HatFunction(cal - i);
-			
+			cal_pointX = static_cast<double>(offset) + cal_point[a];
 
-			// ゼロ除算を避けるためのチェック
-			if (std::abs(denominator) < 1e-10) { // 1e-10 は小さな閾値です
-				continue; // 単に加算をスキップします
+			for (int b = 0; b < d; b++) {
+				cal_pointY = static_cast<double>(offset) + cal_point[b];
+
+				for (int c = 0; c < d; c++) {
+					cal_pointZ = static_cast<double>(offset) + cal_point[c];
+
+					double sum_i = 0.0;
+
+					for (int i = 0; i < NumberOfParticles; i++) {
+						Eigen::Vector3i grid_i = FlatToGrid(i);
+						Eigen::Vector3i i_minus_k = grid_i - grid_k;
+
+						double sum_dim = 1.0;
+						// w_x * w_y * w_z ここが原因かも
+						sum_dim *= HatFunction(cal_pointX - i_minus_k[0]);
+						sum_dim *= HatFunction(cal_pointY - i_minus_k[1]);
+						sum_dim *= HatFunction(cal_pointZ - i_minus_k[2]);
+						
+						if (std::abs(sum_dim) > 1.0e-10) {
+							sum_i += theta[i] * sum_dim;
+						}
+					}
+
+					// ゼロ除算を避けるためのチェック
+					if (std::abs(sum_i) < 1e-10) { // 1e-10 は小さな閾値です
+						continue; // 単に加算をスキップします
+					}
+					else {
+						sum += (1.0 / sum_i) * pow(w * h, 3) * HatFunction(cal_pointX) * HatFunction(cal_pointY) * HatFunction(cal_pointZ);
+						// sum += (1.0 / sum_i) * HatFunction(cal_pointX) * HatFunction(cal_pointY) * HatFunction(cal_pointZ);
+					}
+
+				}
 			}
-			else {
-				
-				sum += (1.0 / d) * h * (1 / denominator) * HatFunction(cal);
-			}
+
+			
 		}
 		// 各offsetの合計を全体の合計に追加
 		totalSum += sum;
@@ -1881,12 +1911,12 @@ double Riemann_Sum_for_Mary(int i, double h) {
 	return totalSum;
 }
 
-double Riemann_Sum_for_Luna(int i_minus_k, int k, Eigen::VectorXd theta, double h) {
+double Riemann_Sum_for_Luna(Eigen::Vector3i i_minus_k, Eigen::Vector3i grid_k, Eigen::VectorXd theta, double h) {
 
-	int d = 10; // ひと範囲の分割数
+	int d = 2; // ひと範囲の分割数
 	double w = 1.0 / d; // 分割幅
-	// 各軸の総分割数
 
+	// 各軸の総分割数
 	vector<double> cal_point;
 
 	for (int a = 0; a < d; a++) {
@@ -1895,28 +1925,51 @@ double Riemann_Sum_for_Luna(int i_minus_k, int k, Eigen::VectorXd theta, double 
 
 	double totalSum = 0.0;
 
-	for (int offset = -2; offset <= 1; offset++) {
+	for (int offset = -1; offset <= 0; offset++) {
 		double sum = 0.0;
+		double cal_pointX;
+		double cal_pointY;
+		double cal_pointZ;
 		for (int a = 0; a < d; a++) {
-			double cal = static_cast<double>(offset) + cal_point[a];
-			double sum_j = 0.0;
-			for (int j = 0; j < NumberOfParticles; j++) {
-				int j_minus_k = j - k;
+			cal_pointX = static_cast<double>(offset) + cal_point[a];
 
-				if(abs(j_minus_k) <= 1) {
-					sum_j += theta[j] * HatFunction(cal - j_minus_k); // thetaの配列の積を考慮
+			for (int b = 0; b < d; b++) {
+				cal_pointY = static_cast<double>(offset) + cal_point[b];
+
+				for (int c = 0; c < d; c++) {
+					cal_pointZ = static_cast<double>(offset) + cal_point[c];
+
+					double sum_j = 0.0;
+					for (int j = 0; j < NumberOfParticles; j++) {
+						Eigen::Vector3i grid_j = FlatToGrid(j);
+						Eigen::Vector3i j_minus_k = grid_j - grid_k;
+
+						double sum_dim = 1.0;
+						sum_dim *= HatFunction(cal_pointX - j_minus_k[0]);
+						sum_dim *= HatFunction(cal_pointY - j_minus_k[1]);
+						sum_dim *= HatFunction(cal_pointZ - j_minus_k[2]);
+
+						if (std::abs(sum_dim) > 1.0e-10) {
+							sum_j += pow(theta[j] * sum_dim, 2);
+						}
+					}
+
+					// ゼロ除算を避けるためのチェック
+					if (std::abs(sum_j) < 1e-10) { // 1e-10 は小さな閾値です
+						continue; // 単に加算をスキップします
+					}
+					else {
+						sum += (1.0 / sum_j) * pow(w * h, 3)
+							* HatFunction(cal_pointX - i_minus_k[0]) * HatFunction(cal_pointY - i_minus_k[1]) * HatFunction(cal_pointZ - i_minus_k[2])
+							* HatFunction(cal_pointX) * HatFunction(cal_pointY) * HatFunction(cal_pointZ);
+					}
+
 				}
-				
-			}
 
-			// ゼロ除算を避けるためのチェック
-			if (abs(sum_j) < 1e-10) { // 1e-10 は小さな閾値です
-				continue; // 単に加算をスキップします
-			}
-			else {
-				sum += w * h * (1 / pow(sum_j, 2)) * HatFunction(cal - i_minus_k) * HatFunction(cal);
 			}
 		}
+
+		totalSum += sum;
 	}
 
 	cal_point.clear();
